@@ -118,6 +118,8 @@ const connectDB = async () => {
   });
 };
 
-connectDB();
+if (require.main === module) {
+  connectDB();
+}
 
 module.exports = app;
