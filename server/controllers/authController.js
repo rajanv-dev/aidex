@@ -1,10 +1,12 @@
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const { normalizeUsername } = require('../utils/normalize');
 
 /** Generate JWT token */
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '8h' });
+  const secret = process.env.JWT_SECRET || 'codebreakers_secret_key_2026';
+  return jwt.sign({ id }, secret, { expiresIn: '8h' });
 };
 
 /**
@@ -14,6 +16,11 @@ const generateToken = (id) => {
 const login = async (req, res) => {
   try {
     const { username, password } = req.body;
+
+    if (mongoose.connection.readyState === 0) {
+      console.error('[AUTH] Database disconnected!');
+      return res.status(500).json({ message: 'Database connection failed. Please configure MONGODB_URI in Vercel Environment Variables.' });
+    }
 
     // Validate input
     const normalizedUsername = normalizeUsername(username);
