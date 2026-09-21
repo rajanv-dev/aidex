@@ -1,5 +1,5 @@
 {
-  "name": "aidex-code-breaker",
+  "name": "aidex-code-breakers",
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
