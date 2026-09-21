@@ -57,6 +57,7 @@ app.use('/api/rounds', participantRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 
 // Health check
+app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 app.get('/api/health', (req, res) => res.json({ status: 'OK', timestamp: new Date().toISOString() }));
 
 // 404 fallback
@@ -128,8 +129,8 @@ const connectDB = async () => {
     console.error('⚠️  Auto-seed error:', seedErr.message);
   }
 
-  app.listen(PORT, () => {
-    console.log(`\n🚀 Code Breakers Backend Server running on http://localhost:${PORT}`);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n🚀 Code Breakers Backend Server running on port ${PORT}`);
     console.log(`🔑 Default Admin: username=admin / password=CodeBreaker123\n`);
   });
 };
