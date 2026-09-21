@@ -100,7 +100,7 @@ export default function LoginPage() {
       } else if (status === 429) {
         friendlyMsg = 'Too many login attempts. Please wait a few minutes and try again.'
       } else {
-        friendlyMsg = 'Server error. Please try again.'
+        friendlyMsg = serverMsg || 'Server error. Please try again.'
       }
       setError(friendlyMsg)
       toast.error(friendlyMsg)
