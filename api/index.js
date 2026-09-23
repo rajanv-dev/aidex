@@ -5,24 +5,36 @@ const seed = require('../server/seed/seed.js');
 let isConnected = false;
 let isSeeded = false;
 
-const DEFAULT_MONGODB_URI = 'mongodb+srv://saravansiddharth05_db_user:B.Rakesh2006@cluster0.sb0x1gy.mongodb.net/code-breakers?retryWrites=true&w=majority';
-
 async function connectToDatabase() {
-  if (isConnected || mongoose.connection.readyState >= 1) {
+  // Already connected — skip
+  if (isConnected && mongoose.connection.readyState >= 1) {
+    return;
+  }
+
+  const uri = process.env.MONGODB_URI;
+
+  if (!uri) {
+    console.error('❌ MONGODB_URI environment variable is not set. Please add it in Vercel Project Settings → Environment Variables.');
+    return;
+  }
+
+  if (mongoose.connection.readyState >= 1) {
     isConnected = true;
     return;
   }
 
-  const uri = process.env.MONGODB_URI || DEFAULT_MONGODB_URI;
-  if (uri && uri !== 'memory') {
-    try {
-      console.log('🔄 Connecting to MongoDB in Vercel serverless function...');
-      await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
-      isConnected = true;
-      console.log('✅ Connected to MongoDB Atlas DB successfully in Vercel serverless function!');
-    } catch (err) {
-      console.error('❌ MongoDB connection error in Vercel serverless function:', err.message);
-    }
+  try {
+    console.log('🔄 Connecting to MongoDB Atlas in Vercel serverless function...');
+    await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 8000,
+      socketTimeoutMS: 45000,
+    });
+    isConnected = true;
+    console.log('✅ Connected to MongoDB Atlas successfully in Vercel!');
+  } catch (err) {
+    isConnected = false;
+    console.error('❌ MongoDB connection error in Vercel:', err.message);
+    return;
   }
 
   if (isConnected && !isSeeded) {
@@ -30,7 +42,7 @@ async function connectToDatabase() {
       await seed();
       isSeeded = true;
     } catch (seedErr) {
-      console.error('⚠️ Auto-seed error in Vercel serverless function:', seedErr.message);
+      console.error('⚠️ Auto-seed error in Vercel:', seedErr.message);
     }
   }
 }
