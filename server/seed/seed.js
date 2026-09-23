@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const User = require('../models/User');
 const Question = require('../models/Question');
 const RoundControl = require('../models/RoundControl');
+const { restoreUserBackup, saveUserBackup } = require('../utils/userBackup');
 
 const seed = async () => {
   try {
@@ -16,6 +17,9 @@ const seed = async () => {
         }
       }
     }
+
+    // ─── Restore any backed up users first ─────────────────────────────────────
+    await restoreUserBackup();
 
     // ─── Admin Account ────────────────────────────────────────────────────────
     const existingAdmin = await User.findOne({ role: 'admin' });
@@ -427,6 +431,7 @@ const seed = async () => {
       console.log('🐛  Round 3: 5 sample Advanced questions created (8 marks each)');
     }
 
+    await saveUserBackup();
     console.log('✅  Seeding complete!');
   } catch (err) {
     console.error('❌  Seed error:', err.message);

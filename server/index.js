@@ -111,9 +111,10 @@ const connectDB = async () => {
           dbPath: dataDir,
           storageEngine: 'wiredTiger',
           keepData: true,
+          dbName: 'code-breakers',
         },
       });
-      const uri = mongod.getUri();
+      const uri = mongod.getUri('code-breakers');
       await mongoose.connect(uri);
       console.log('✅ Connected to Local Persistent MongoDB at', uri);
     } catch (err) {

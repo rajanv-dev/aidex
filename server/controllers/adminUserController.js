@@ -3,6 +3,7 @@ const Submission = require('../models/Submission');
 const csv = require('csv-parser');
 const { Readable } = require('stream');
 const { normalizeUsername } = require('../utils/normalize');
+const { saveUserBackup } = require('../utils/userBackup');
 
 /**
  * POST /api/admin/users
@@ -49,6 +50,8 @@ const createUser = async (req, res) => {
     });
 
     console.log(`[ADMIN] Participant created: username="${username}", teamName="${cleanTeam}"`);
+
+    await saveUserBackup();
 
     // Return safe user object (toJSON transform strips password)
     res.status(201).json({
@@ -163,6 +166,8 @@ const bulkCreateUsers = async (req, res) => {
       }
     }
 
+    await saveUserBackup();
+
     res.json({ created: results.length, errors, created_users: results });
   } catch (err) {
     console.error('[ADMIN] bulkCreateUsers error:', err);
@@ -235,6 +240,7 @@ const updateUser = async (req, res) => {
 
     await user.save();
     console.log(`[ADMIN] Participant updated: ${user._id}`);
+    await saveUserBackup();
 
     res.json({
       message: 'User updated',
@@ -272,6 +278,7 @@ const deleteUser = async (req, res) => {
     }
     user.isActive = false;
     await user.save();
+    await saveUserBackup();
     res.json({ message: 'User deactivated' });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
