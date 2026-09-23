@@ -2,7 +2,7 @@
   "name": "aidex-code-breakers",
   "version": 2,
   "buildCommand": "npm run build",
-  "outputDirectory": "client/dist",
+  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/api",
