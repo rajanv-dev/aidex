@@ -98,8 +98,7 @@ const connectDB = async () => {
         const lockFile = path.join(dataDir, 'mongod.lock');
         if (fs.existsSync(lockFile)) {
           try {
-            const stats = fs.statSync(lockFile);
-            if (stats.size === 0) fs.unlinkSync(lockFile);
+            fs.unlinkSync(lockFile);
           } catch (_) {}
         }
       }
