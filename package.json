@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "dev": "npm --prefix client run dev",
-    "build": "npm --prefix client run build",
+    "build": "npm --prefix client run build && node -e \"require('fs').cpSync('client/dist', 'dist', {recursive: true})\"",
     "preview": "npm --prefix client run preview"
   },
   "dependencies": {
