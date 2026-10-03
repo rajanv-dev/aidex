@@ -116,6 +116,32 @@ export default function AdminUsers() {
     finally { setBulkUploading(false); e.target.value = '' }
   }
 
+  const handleExportBackup = async () => {
+    try {
+      const response = await api.get('/admin/users/export-backup', { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'participants_backup.json')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      toast.success('Backup exported successfully')
+    } catch {
+      toast.error('Failed to export backup')
+    }
+  }
+
+  const handleRestoreBackup = async () => {
+    try {
+      const { data } = await api.post('/admin/users/import-backup')
+      toast.success(`Restored ${data.count} participants from backup`)
+      fetchUsers()
+    } catch {
+      toast.error('Failed to restore backup')
+    }
+  }
+
   const filtered = users.filter(u =>
     (u.teamName || '').toLowerCase().includes(search.toLowerCase()) ||
     (u.name || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -140,6 +166,12 @@ export default function AdminUsers() {
           <p style={{ color:'var(--text-dim)', fontSize:'0.82rem' }}>{users.length} total accounts</p>
         </div>
         <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
+          <button className="btn btn-secondary btn-sm" onClick={handleExportBackup} title="Download JSON backup file">
+            Export Backup
+          </button>
+          <button className="btn btn-secondary btn-sm" onClick={handleRestoreBackup} title="Restore participants from server JSON backup">
+            Restore Backup
+          </button>
           <label className="btn btn-secondary btn-sm" style={{ cursor:'pointer' }}>
             {bulkUploading ? 'Uploading...' : 'Bulk CSV Upload'}
             <input type="file" accept=".csv" onChange={handleBulkUpload} style={{ display:'none' }} id="bulk-upload" />

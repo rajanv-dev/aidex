@@ -34,12 +34,25 @@ const login = async (req, res) => {
     // This allows participants to type their team name in any case.
     // Both fields are checked because the admin UI displays "Team Name" but
     // the stored username is the lowercased version.
-    const user = await User.findOne({
+    let user = await User.findOne({
       $or: [
         { username: normalizedUsername },
         { teamName: { $regex: `^${normalizedUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } },
       ],
     });
+
+    if (!user) {
+      try {
+        const { restoreUserBackup } = require('../utils/userBackup');
+        await restoreUserBackup();
+        user = await User.findOne({
+          $or: [
+            { username: normalizedUsername },
+            { teamName: { $regex: `^${normalizedUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } },
+          ],
+        });
+      } catch (_) {}
+    }
 
     console.log(`[AUTH] User found: ${!!user}`);
 

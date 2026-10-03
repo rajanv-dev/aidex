@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const { protect, requireAdmin } = require('../middleware/auth');
-const { createUser, bulkCreateUsers, getUsers, updateUser, deleteUser } = require('../controllers/adminUserController');
+const { createUser, bulkCreateUsers, getUsers, updateUser, deleteUser, exportBackup, importBackup } = require('../controllers/adminUserController');
+
 const {
   getQuestions,
   getStats,
@@ -25,6 +26,8 @@ router.use(protect, requireAdmin);
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 // ─── Users ────────────────────────────────────────────────────────────────────
+router.get('/users/export-backup', exportBackup);
+router.post('/users/import-backup', importBackup);
 router.get('/users', getUsers);
 router.post('/users', createUser);
 router.post('/users/bulk', upload.single('file'), bulkCreateUsers);

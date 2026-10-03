@@ -2,10 +2,14 @@ const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
 
-const BACKUP_FILE = path.join(__dirname, '../data/users_backup.json');
+const BACKUP_PATHS = [
+  path.join(__dirname, '../data/users_backup.json'),
+  path.join(__dirname, '../users_backup.json'),
+  path.join(__dirname, '../../users_backup.json'),
+];
 
 /**
- * Save all participant accounts (and admin accounts) to JSON backup file
+ * Save all participant accounts (and admin accounts) to JSON backup files
  */
 const saveUserBackup = async () => {
   try {
@@ -13,7 +17,7 @@ const saveUserBackup = async () => {
     const users = await User.find({}).lean();
 
     if (!users || users.length === 0) {
-      console.log('ℹ [BACKUP] No users in database to backup; preserving existing backup file.');
+      console.log('ℹ [BACKUP] No users in database to backup; preserving existing backup files.');
       return;
     }
 
@@ -29,21 +33,24 @@ const saveUserBackup = async () => {
       updatedAt: u.updatedAt,
     }));
 
-    // Ensure data directory exists if filesystem is writable
-    const dataDir = path.dirname(BACKUP_FILE);
-    if (!fs.existsSync(dataDir)) {
+    const jsonStr = JSON.stringify(backupData, null, 2);
+    let savedAny = false;
+
+    for (const fileLoc of BACKUP_PATHS) {
       try {
-        fs.mkdirSync(dataDir, { recursive: true });
+        const dataDir = path.dirname(fileLoc);
+        if (!fs.existsSync(dataDir)) {
+          fs.mkdirSync(dataDir, { recursive: true });
+        }
+        fs.writeFileSync(fileLoc, jsonStr, 'utf-8');
+        savedAny = true;
       } catch (_) {
-        // Read-only filesystem (e.g. Vercel)
+        // Continue to next path if file system is read-only
       }
     }
 
-    try {
-      fs.writeFileSync(BACKUP_FILE, JSON.stringify(backupData, null, 2), 'utf-8');
+    if (savedAny) {
       console.log(` [BACKUP] Saved ${backupData.length} users to backup JSON file.`);
-    } catch (writeErr) {
-      console.log('ℹ [BACKUP] Local file write skipped (read-only filesystem). Data persisted in MongoDB Atlas.');
     }
   } catch (err) {
     console.error(' [BACKUP] Failed to save users backup:', err.message);
@@ -51,22 +58,32 @@ const saveUserBackup = async () => {
 };
 
 /**
- * Restore users from JSON backup file into MongoDB database if missing
+ * Restore users from JSON backup files into MongoDB database if missing
  */
 const restoreUserBackup = async () => {
   try {
-    if (!fs.existsSync(BACKUP_FILE)) {
-      return;
-    }
-
-    const fileContent = fs.readFileSync(BACKUP_FILE, 'utf-8');
-    if (!fileContent || !fileContent.trim()) return;
-
-    const backupUsers = JSON.parse(fileContent);
-    if (!Array.isArray(backupUsers) || backupUsers.length === 0) return;
-
     const User = mongoose.model('User');
     let restoredCount = 0;
+    let backupUsers = [];
+
+    for (const fileLoc of BACKUP_PATHS) {
+      try {
+        if (fs.existsSync(fileLoc)) {
+          const content = fs.readFileSync(fileLoc, 'utf-8');
+          if (content && content.trim()) {
+            const parsed = JSON.parse(content);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              backupUsers = parsed;
+              break; // Found valid backup file
+            }
+          }
+        }
+      } catch (_) {
+        // Try next location
+      }
+    }
+
+    if (backupUsers.length === 0) return;
 
     for (const uData of backupUsers) {
       if (!uData.username) continue;
@@ -75,7 +92,6 @@ const restoreUserBackup = async () => {
           $or: [{ username: uData.username }, { _id: uData._id }],
         });
         if (!existing) {
-          // Use collection.insertOne to prevent re-triggering bcrypt hook on already-hashed password
           const userDoc = {
             _id: new mongoose.Types.ObjectId(uData._id),
             name: uData.name || uData.teamName || uData.username,
@@ -105,3 +121,4 @@ const restoreUserBackup = async () => {
 };
 
 module.exports = { saveUserBackup, restoreUserBackup };
+

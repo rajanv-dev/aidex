@@ -214,7 +214,15 @@ const bulkCreateUsers = async (req, res) => {
  */
 const getUsers = async (req, res) => {
   try {
-    const users = await User.find({ role: 'participant' }).sort({ createdAt: -1 });
+    let users = await User.find({ role: 'participant' }).sort({ createdAt: -1 });
+    if (users.length === 0) {
+      try {
+        const { restoreUserBackup } = require('../utils/userBackup');
+        await restoreUserBackup();
+        users = await User.find({ role: 'participant' }).sort({ createdAt: -1 });
+      } catch (_) {}
+    }
+
     const userIds = users.map((u) => u._id);
 
     const submissions = await Submission.find({ userId: { $in: userIds } }).select(
@@ -319,4 +327,36 @@ const deleteUser = async (req, res) => {
   }
 };
 
-module.exports = { createUser, bulkCreateUsers, getUsers, updateUser, deleteUser };
+/**
+ * GET /api/admin/users/export-backup
+ * Export JSON backup of participants
+ */
+const exportBackup = async (req, res) => {
+  try {
+    const users = await User.find({ role: 'participant' }).lean();
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename=participants_backup.json');
+    res.send(JSON.stringify(users, null, 2));
+  } catch (err) {
+    res.status(500).json({ message: 'Error exporting backup' });
+  }
+};
+
+/**
+ * POST /api/admin/users/import-backup
+ * Import JSON backup of participants
+ */
+const importBackup = async (req, res) => {
+  try {
+    const { restoreUserBackup } = require('../utils/userBackup');
+    await restoreUserBackup();
+    const users = await User.find({ role: 'participant' }).sort({ createdAt: -1 });
+    res.json({ message: 'Backup restored successfully', count: users.length, users });
+  } catch (err) {
+    res.status(500).json({ message: 'Error importing backup' });
+  }
+};
+
+module.exports = { createUser, bulkCreateUsers, getUsers, updateUser, deleteUser, exportBackup, importBackup };
+
+
