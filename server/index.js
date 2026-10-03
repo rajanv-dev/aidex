@@ -92,10 +92,13 @@ let mongoMemoryServerInstance = null;
 const connectDB = async () => {
   let connected = false;
   
-  if (process.env.MONGODB_URI && process.env.MONGODB_URI !== 'memory') {
+  const DEFAULT_ATLAS_URI = 'mongodb+srv://Anand:anand123@cluster0.bn7dvbg.mongodb.net/code-breakers?retryWrites=true&w=majority';
+  const mongoUri = process.env.MONGODB_URI || DEFAULT_ATLAS_URI;
+  
+  if (mongoUri && mongoUri !== 'memory') {
     try {
-      console.log(' Connecting to MongoDB:', process.env.MONGODB_URI);
-      await mongoose.connect(process.env.MONGODB_URI, {
+      console.log(' Connecting to MongoDB:', mongoUri);
+      await mongoose.connect(mongoUri, {
         serverSelectionTimeoutMS: 10000,
         connectTimeoutMS: 10000,
       });

@@ -12,6 +12,6 @@ services:
       - key: CLIENT_URL
         sync: false
       - key: MONGODB_URI
-        sync: false
+        value: mongodb+srv://Anand:anand123@cluster0.bn7dvbg.mongodb.net/code-breakers?retryWrites=true&w=majority
       - key: JWT_SECRET
-        generateValue: true
+        value: codebreakers_secret_key_2026

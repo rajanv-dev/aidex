@@ -11,7 +11,8 @@ async function connectToDatabase() {
     return;
   }
 
-  const uri = process.env.MONGODB_URI;
+  const DEFAULT_ATLAS_URI = 'mongodb+srv://Anand:anand123@cluster0.bn7dvbg.mongodb.net/code-breakers?retryWrites=true&w=majority';
+  const uri = process.env.MONGODB_URI || DEFAULT_ATLAS_URI;
 
   if (!uri) {
     console.error(' MONGODB_URI environment variable is not set. Please add it in Vercel Project Settings → Environment Variables.');
