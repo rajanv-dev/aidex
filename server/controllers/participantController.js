@@ -9,6 +9,35 @@ const { ROUND_CONFIG } = require('../utils/roundConfig');
 /** Normalize a string answer for comparison (trim + lowercase) */
 const normalize = (str) => String(str ?? '').trim().toLowerCase();
 
+/**
+ * Simple pseudo-random number generator (Mulberry32) based on a string seed.
+ */
+function seededRandom(seedStr) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < seedStr.length; i++) {
+    h = Math.imul(h ^ seedStr.charCodeAt(i), 16777619);
+  }
+  return function () {
+    let t = (h += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Deterministically shuffle an array based on a seed string (e.g. userId + round)
+ */
+function shuffleArray(array, seedStr) {
+  const rng = seededRandom(seedStr);
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 /** Check if round is unlocked, participant hasn't submitted, and deadline not passed */
 const checkRoundAccess = async (userId, roundNum) => {
   const control = await RoundControl.findOne({ round: roundNum });
@@ -128,11 +157,14 @@ const getRound1Questions = async (req, res) => {
     }
 
     const inProgress = await Submission.findOne({ userId: req.user._id, round: 1, status: 'in-progress' });
-    if (inProgress) {
+    if (inProgress && inProgress.answers && inProgress.answers.length > 0) {
       const questionIds = inProgress.answers.map((a) => a.questionId);
-      const questions = await Question.find({ _id: { $in: questionIds }, round: 1, isActive: true })
-        .select('-correctOptionIndex -correctAnswer')
-        .sort({ order: 1 });
+      const dbQuestions = await Question.find({ _id: { $in: questionIds }, round: 1, isActive: true })
+        .select('-correctOptionIndex -correctAnswer');
+
+      const qMap = {};
+      dbQuestions.forEach((q) => (qMap[q._id.toString()] = q));
+      const questions = questionIds.map((id) => qMap[id.toString()]).filter(Boolean);
 
       const ctrl = await RoundControl.findOne({ round: 1 });
       let timeRemainingSeconds = null;
@@ -153,12 +185,14 @@ const getRound1Questions = async (req, res) => {
     }
 
     // Fresh start: fetch active Round 1 questions (up to 15)
-    const questions = await Question.find({ round: 1, isActive: true })
+    let questions = await Question.find({ round: 1, isActive: true })
       .select('-correctOptionIndex -correctAnswer')
-      .sort({ order: 1, createdAt: 1 })
       .limit(ROUND_CONFIG[1].maxQuestions);
 
-    // Create in-progress submission record
+    // Shuffle questions deterministically for this participant
+    questions = shuffleArray(questions, req.user._id.toString() + '_r1');
+
+    // Create in-progress submission record preserving this user's shuffled question order
     await Submission.create({
       userId: req.user._id,
       round: 1,
@@ -260,10 +294,48 @@ const getRound2Questions = async (req, res) => {
       return res.status(access.status).json({ message: access.reason });
     }
 
-    const questions = await Question.find({ round: 2, isActive: true })
+    const inProgress = await Submission.findOne({ userId: req.user._id, round: 2, status: 'in-progress' });
+    if (inProgress && inProgress.answers && inProgress.answers.length > 0) {
+      const questionIds = inProgress.answers.map((a) => a.questionId);
+      const dbQuestions = await Question.find({ _id: { $in: questionIds }, round: 2, isActive: true })
+        .select('-correctOutput -correctAnswer -correctOptionIndex -java.answer -python.answer');
+
+      const qMap = {};
+      dbQuestions.forEach((q) => (qMap[q._id.toString()] = q));
+      const questions = questionIds.map((id) => qMap[id.toString()]).filter(Boolean);
+
+      const ctrl = await RoundControl.findOne({ round: 2 });
+      let timeRemainingSeconds = null;
+      if (ctrl && ctrl.isUnlocked && ctrl.durationMinutes && ctrl.unlockedAt) {
+        const elapsed = (Date.now() - new Date(ctrl.unlockedAt).getTime()) / 1000;
+        timeRemainingSeconds = Math.max(0, Math.floor(ctrl.durationMinutes * 60 - elapsed));
+      }
+
+      return res.json({
+        questions,
+        startedAt: inProgress.startedAt,
+        roundControl: {
+          durationMinutes: ctrl?.durationMinutes || null,
+          unlockedAt: ctrl?.unlockedAt || null,
+          timeRemainingSeconds,
+        },
+      });
+    }
+
+    let questions = await Question.find({ round: 2, isActive: true })
       .select('-correctOutput -correctAnswer -correctOptionIndex -java.answer -python.answer')
-      .sort({ order: 1, createdAt: 1 })
       .limit(ROUND_CONFIG[2].maxQuestions);
+
+    // Shuffle questions deterministically for this participant
+    questions = shuffleArray(questions, req.user._id.toString() + '_r2');
+
+    await Submission.create({
+      userId: req.user._id,
+      round: 2,
+      answers: questions.map((q) => ({ questionId: q._id, submittedAnswer: null, isCorrect: false, pointsAwarded: 0 })),
+      status: 'in-progress',
+      startedAt: new Date(),
+    });
 
     const ctrl = await RoundControl.findOne({ round: 2 });
     let timeRemainingSeconds = null;
@@ -274,6 +346,7 @@ const getRound2Questions = async (req, res) => {
 
     res.json({
       questions,
+      startedAt: new Date(),
       roundControl: {
         durationMinutes: ctrl?.durationMinutes || null,
         unlockedAt: ctrl?.unlockedAt || null,
@@ -362,10 +435,48 @@ const getRound3Questions = async (req, res) => {
       return res.status(access.status).json({ message: access.reason });
     }
 
-    const questions = await Question.find({ round: 3, isActive: true })
+    const inProgress = await Submission.findOne({ userId: req.user._id, round: 3, status: 'in-progress' });
+    if (inProgress && inProgress.answers && inProgress.answers.length > 0) {
+      const questionIds = inProgress.answers.map((a) => a.questionId);
+      const dbQuestions = await Question.find({ _id: { $in: questionIds }, round: 3, isActive: true })
+        .select('-hiddenInput -hiddenExpectedOutput -hiddenAnswer -java.hiddenInput -java.hiddenAnswer -java.hiddenInput2 -java.hiddenAnswer2 -python.hiddenInput -python.hiddenAnswer -python.hiddenInput2 -python.hiddenAnswer2 -explanation -java.correctCode -python.correctCode');
+
+      const qMap = {};
+      dbQuestions.forEach((q) => (qMap[q._id.toString()] = q));
+      const questions = questionIds.map((id) => qMap[id.toString()]).filter(Boolean);
+
+      const ctrl = await RoundControl.findOne({ round: 3 });
+      let timeRemainingSeconds = null;
+      if (ctrl && ctrl.isUnlocked && ctrl.durationMinutes && ctrl.unlockedAt) {
+        const elapsed = (Date.now() - new Date(ctrl.unlockedAt).getTime()) / 1000;
+        timeRemainingSeconds = Math.max(0, Math.floor(ctrl.durationMinutes * 60 - elapsed));
+      }
+
+      return res.json({
+        questions,
+        startedAt: inProgress.startedAt,
+        roundControl: {
+          durationMinutes: ctrl?.durationMinutes || null,
+          unlockedAt: ctrl?.unlockedAt || null,
+          timeRemainingSeconds,
+        },
+      });
+    }
+
+    let questions = await Question.find({ round: 3, isActive: true })
       .select('-hiddenInput -hiddenExpectedOutput -hiddenAnswer -java.hiddenInput -java.hiddenAnswer -java.hiddenInput2 -java.hiddenAnswer2 -python.hiddenInput -python.hiddenAnswer -python.hiddenInput2 -python.hiddenAnswer2 -explanation -java.correctCode -python.correctCode')
-      .sort({ order: 1, createdAt: 1 })
       .limit(ROUND_CONFIG[3].maxQuestions);
+
+    // Shuffle questions deterministically for this participant
+    questions = shuffleArray(questions, req.user._id.toString() + '_r3');
+
+    await Submission.create({
+      userId: req.user._id,
+      round: 3,
+      answers: questions.map((q) => ({ questionId: q._id, submittedAnswer: null, isCorrect: false, pointsAwarded: 0 })),
+      status: 'in-progress',
+      startedAt: new Date(),
+    });
 
     const ctrl = await RoundControl.findOne({ round: 3 });
     let timeRemainingSeconds = null;
@@ -376,6 +487,7 @@ const getRound3Questions = async (req, res) => {
 
     res.json({
       questions,
+      startedAt: new Date(),
       roundControl: {
         durationMinutes: ctrl?.durationMinutes || null,
         unlockedAt: ctrl?.unlockedAt || null,
