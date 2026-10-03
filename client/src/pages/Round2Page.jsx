@@ -86,8 +86,7 @@ export default function Round2Page() {
         if (err.response?.status === 403) {
           setError(msg || 'Round 2 is locked Wait for a moment')
         } else if (err.response?.status === 409) {
-          toast.info('Already submitted Round 2!')
-          navigate('/')
+          setSubmitted(true)
         } else {
           setError(msg || 'UNABLE TO LOAD ROUND 2')
         }

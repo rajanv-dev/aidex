@@ -65,31 +65,28 @@ export default function FinalResultPage() {
             marginBottom: '4px',
           }}
         >
-          FINAL RESULT
+          ALL ROUNDS COMPLETED
         </h1>
         <p style={{ fontFamily: 'var(--font-heading)', fontSize: '0.82rem', letterSpacing: '0.15em', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: '28px' }}>
-          {user?.teamName || user?.name || user?.username} — PERFORMANCE SUMMARY
+          {user?.teamName || user?.name || user?.username} — SUBMISSION RECORDED
         </p>
 
-        {/* Big Final Score Hero Display */}
+        {/* Completion Message Display */}
         <div
           style={{
             background: 'rgba(74, 222, 128, 0.08)',
             border: '1px solid rgba(74, 222, 128, 0.3)',
             borderRadius: 'var(--radius-md)',
-            padding: '24px 20px',
-            marginBottom: '24px',
+            padding: '28px 20px',
+            marginBottom: '28px',
             textAlign: 'center',
           }}
         >
-          <p style={{ fontFamily: 'var(--font-heading)', fontSize: '0.78rem', letterSpacing: '0.2em', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: '8px' }}>
-            OVERALL FINAL SCORE
+          <p style={{ fontFamily: 'var(--font-heading)', fontSize: '1.1rem', color: '#4ade80', fontWeight: 700, marginBottom: '10px' }}>
+            ✓ ALL ROUNDS SUBMITTED SUCCESSFULLY
           </p>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '3.8rem', fontWeight: 800, color: '#4ade80', lineHeight: 1 }}>
-            {total} <span style={{ fontSize: '1.5rem', color: 'var(--text-dim)', fontWeight: 500 }}>/ 100</span>
-          </div>
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1rem', color: '#60a5fa', marginTop: '10px', fontWeight: 600 }}>
-            {percentage}% SCORE ACCURACY
+          <p style={{ color: 'var(--text-dim)', fontSize: '0.88rem', lineHeight: 1.6, margin: 0 }}>
+            Thank you for participating in Code Breakers! All your answers have been recorded successfully. Results will be evaluated and announced by the event administrators.
           </p>
         </div>
 

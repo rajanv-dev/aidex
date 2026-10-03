@@ -265,10 +265,12 @@ export default function HomePage() {
                 </p>
 
                 {selectedModalData?.submitted ? (
-                  <div style={{ textAlign: 'center', padding: '12px', background: 'rgba(74, 222, 128, 0.1)', borderRadius: '8px', border: '1px solid rgba(74, 222, 128, 0.3)' }}>
-                    <p style={{ color: '#4ade80', fontWeight: 700, fontSize: '1.1rem', fontFamily: 'var(--font-heading)' }}>✓ ROUND COMPLETED</p>
-                    <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', marginTop: '4px' }}>
-                      Your answers have been submitted. Final score will be shown on completion of all rounds.
+                  <div style={{ textAlign: 'center', padding: '16px 12px', background: 'rgba(74, 222, 128, 0.1)', borderRadius: '8px', border: '1px solid rgba(74, 222, 128, 0.3)' }}>
+                    <p style={{ color: '#4ade80', fontWeight: 700, fontSize: '1.1rem', fontFamily: 'var(--font-heading)', letterSpacing: '0.05em' }}>
+                      ✓ ROUND HAS BEEN COMPLETED
+                    </p>
+                    <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', marginTop: '6px' }}>
+                      Your responses for Round {activeModalRound} have been recorded successfully.
                     </p>
                   </div>
                 ) : selectedModalData?.isUnlocked ? (
@@ -303,12 +305,9 @@ export default function HomePage() {
                 <button
                   className="poker-modal-start-btn"
                   style={{ background: 'linear-gradient(135deg, #1f2a24 0%, #111a15 100%)', color: '#4ade80', border: '1px solid #4ade80', animation: 'none' }}
-                  onClick={() => {
-                    setActiveModalRound(null)
-                    navigate('/final-result')
-                  }}
+                  onClick={() => setActiveModalRound(null)}
                 >
-                  ✓ VIEW RESULT BREAKDOWN
+                  ✓ ROUND HAS BEEN COMPLETED
                 </button>
               ) : selectedModalData?.isUnlocked ? (
                 <button id={`start-sector-${activeModalRound}`} className="poker-modal-start-btn" onClick={() => handleEnter(activeModalRound, selectedModalData)}>

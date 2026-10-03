@@ -105,8 +105,7 @@ export default function Round3Page() {
         if (err.response?.status === 403) {
           setError(msg || 'Round 3 is locked Wait for a moment')
         } else if (err.response?.status === 409) {
-          toast.info('Already submitted Round 3!')
-          navigate('/final-result')
+          setSubmitted(true)
         } else {
           setError(msg || 'UNABLE TO LOAD ROUND 3')
         }
