@@ -3,6 +3,16 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'axios',
+      '@monaco-editor/react',
+      'react-syntax-highlighter',
+    ],
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
