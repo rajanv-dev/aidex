@@ -214,14 +214,7 @@ const bulkCreateUsers = async (req, res) => {
  */
 const getUsers = async (req, res) => {
   try {
-    let users = await User.find({ role: 'participant' }).sort({ createdAt: -1 });
-    if (users.length === 0) {
-      try {
-        const { restoreUserBackup } = require('../utils/userBackup');
-        await restoreUserBackup();
-        users = await User.find({ role: 'participant' }).sort({ createdAt: -1 });
-      } catch (_) {}
-    }
+    const users = await User.find({ role: 'participant' }).sort({ createdAt: -1 });
 
     const userIds = users.map((u) => u._id);
 

@@ -75,5 +75,16 @@
     "isActive": true,
     "createdAt": "2026-10-05T04:23:50.754Z",
     "updatedAt": "2026-10-05T04:23:51.710Z"
+  },
+  {
+    "_id": "6ac3c4fe86048aa82572db86",
+    "name": "devi",
+    "username": "devi",
+    "password": "$2a$10$kFfN6E3l0F15i9a8c43j8OxzyhFB3I9A9aVxrRaalDyAlNe2jCcr6",
+    "role": "participant",
+    "teamName": "devi",
+    "isActive": true,
+    "createdAt": "2026-10-05T15:40:46.816Z",
+    "updatedAt": "2026-10-05T15:40:46.816Z"
   }
 ]
