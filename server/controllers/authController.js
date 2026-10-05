@@ -30,31 +30,13 @@ const login = async (req, res) => {
 
     console.log(`[AUTH] Login attempt for: "${normalizedUsername}"`);
 
-    // Search by normalized username OR by teamName (case-insensitive, exact match)
-    // This allows participants to type their team name in any case.
-    // Both fields are checked because the admin UI displays "Team Name" but
-    // the stored username is the lowercased version.
-    let user = await User.findOne({
+    // Search by normalized username OR exact teamName directly
+    const user = await User.findOne({
       $or: [
         { username: normalizedUsername },
         { teamName: { $regex: `^${normalizedUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } },
       ],
     });
-
-    if (!user) {
-      try {
-        const { restoreUserBackup } = require('../utils/userBackup');
-        await restoreUserBackup();
-        user = await User.findOne({
-          $or: [
-            { username: normalizedUsername },
-            { teamName: { $regex: `^${normalizedUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } },
-          ],
-        });
-      } catch (_) {}
-    }
-
-    console.log(`[AUTH] User found: ${!!user}`);
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid username or password' });
@@ -66,10 +48,7 @@ const login = async (req, res) => {
       return res.status(403).json({ message: 'Account deactivated. Contact admin.' });
     }
 
-    console.log(`[AUTH] User active: true`);
-
     const isMatch = await user.comparePassword(password);
-    console.log(`[AUTH] Password matched: ${isMatch}`);
 
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid username or password' });
